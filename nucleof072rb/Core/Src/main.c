@@ -36,6 +36,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SPI_DATA_LEN 3U
+#define MIN_TICKS 3200U
+#define ADC_MAX_VALUE 1023U
+#define ADC_RANGE_TICKS 3200U
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -93,6 +97,8 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  uint8_t tx_data[3] = {0x01, 0x90, 0x00}; // Contains the start byte, Check measure channel 1 byte, and dummy byte
+  uint8_t rx_data[3]= {0,0,0};
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -102,16 +108,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  uint8_t tx_data[3] = {0x01, 0x90, 0x00}; // Contains the start byte, Check measure channel 1 byte, and dummy byte
-	  uint8_t rx_data[3]= {0,0,0};
 
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8,GPIO_PIN_RESET); //Pulling CS low
-	  HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, HAL_MAX_DELAY);
+
+	  HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, SPI_DATA_LEN, HAL_MAX_DELAY);
+	  if (status != HAL_OK) {
+		  printf("SPI error! = %d", status);
+		  Error_Handler();
+	  }
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); // Pulling CS high
 
 	  uint16_t adc_val = ((rx_data[1]&0x03) << 8) | rx_data[2]; //10 bit data stored in 16 bits
 
-	  uint16_t pulse_ticks = 1000 + ((adc_val*1000)/1023);
+	  uint16_t pulse_ticks = MIN_TICKS + ((adc_val*ADC_RANGE_TICKS)/ADC_MAX_VALUE);
 
 	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,pulse_ticks); // Setting the CCR
 
