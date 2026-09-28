@@ -97,7 +97,7 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  uint8_t tx_data[3] = {0x01, 0x90, 0x00}; // Contains the start byte, Check measure channel 1 byte, and dummy byte
+  uint8_t tx_data[3] = {0x01, 0x80, 0x00}; // Contains the start byte, Check measure channel 1 byte, and dummy byte
   uint8_t rx_data[3]= {0,0,0};
   /* USER CODE END 2 */
 
