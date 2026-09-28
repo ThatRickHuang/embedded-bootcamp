@@ -19,6 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -87,8 +89,10 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -98,6 +102,21 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  uint8_t tx_data[3] = {0x01, 0x90, 0x00}; // Contains the start byte, Check measure channel 1 byte, and dummy byte
+	  uint8_t rx_data[3]= {0,0,0};
+
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8,GPIO_PIN_RESET); //Pulling CS low
+	  HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, HAL_MAX_DELAY);
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); // Pulling CS high
+
+	  uint16_t adc_val = ((rx_data[1]&0x03) << 8) | rx_data[2]; //10 bit data stored in 16 bits
+
+	  uint16_t pulse_ticks = 1000 + ((adc_val*1000)/1023);
+
+	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,pulse_ticks); // Setting the CCR
+
+	  HAL_Delay(10);
+
   }
   /* USER CODE END 3 */
 }
